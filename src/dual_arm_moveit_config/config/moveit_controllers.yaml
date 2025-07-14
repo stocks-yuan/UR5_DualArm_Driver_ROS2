@@ -1,0 +1,37 @@
+# MoveIt uses this configuration for controller management
+/**:
+  ros__parameters:
+    moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+    moveit_simple_controller_manager:
+      controller_names:
+        - /leftArm/left_ur_arm_controller
+        - /rightArm/right_ur_arm_controller
+
+      /leftArm/left_ur_arm_controller:
+        type: FollowJointTrajectory
+        action_ns: follow_joint_trajectory
+        default: true
+        joints:
+          - leftArm_shoulder_pan_joint
+          - leftArm_shoulder_lift_joint
+          - leftArm_elbow_joint
+          - leftArm_wrist_1_joint
+          - leftArm_wrist_2_joint
+          - leftArm_wrist_3_joint
+        action_ns: follow_joint_trajectory
+        default: true
+        
+      /rightArm/right_ur_arm_controller:
+        type: FollowJointTrajectory
+        action_ns: follow_joint_trajectory
+        default: true
+        joints:
+          - rightArm_shoulder_pan_joint
+          - rightArm_shoulder_lift_joint
+          - rightArm_elbow_joint
+          - rightArm_wrist_1_joint
+          - rightArm_wrist_2_joint
+          - rightArm_wrist_3_joint
+        action_ns: follow_joint_trajectory
+        default: true

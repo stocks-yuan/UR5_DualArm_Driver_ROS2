@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_ur5_ft_gripper_base">
+
+    <!-- parameters -->
+    <xacro:arg name="ur_type" default="ur5"/>
+    <xacro:arg name="leftArm_tf_prefix" default="leftArm_" />
+    <xacro:arg name="rightArm_tf_prefix" default="rightArm_" />
+    <xacro:arg name="sim_gazebo" default="false" />
+    <xacro:arg name="simulation_controllers" default="$(find dual_description)/config/controllers.yaml" />
+    <xacro:arg name="left_initial_positions_file" default="$(find dual_description)/config/left_initial_positions.yaml"/>
+    <xacro:arg name="right_initial_positions_file" default="$(find dual_description)/config/right_initial_positions.yaml"/>
+    <xacro:arg name="base_frame_file" default="$(find dual_description)/config/base_frame.yaml" />
+    <xacro:arg name="left_arm_kinematics_parameters_file" default="$(find dual_description)/config/calibration/left_arm_calibration.yaml" />
+    <xacro:arg name="right_arm_kinematics_parameters_file" default="$(find dual_description)/config/calibration/right_arm_calibration.yaml" />
+    <xacro:arg name="sim_ignition" default="false" />
+    
+    <xacro:arg name="use_fake_hardware" default="false" />
+    <xacro:arg name="fake_sensor_commands" default="false" />
+    
+
+    <!--property-->
+    <xacro:property name="base_frame_file" value="$(arg base_frame_file)"/>
+    <xacro:property name="left_base_frame" value="${xacro.load_yaml(base_frame_file)['left_base_frame']}"/>
+    <xacro:property name="right_base_frame" value="${xacro.load_yaml(base_frame_file)['right_base_frame']}"/>
+    <xacro:property name="world_base_frame" value="${xacro.load_yaml(base_frame_file)['world_base_frame']}"/>
+
+    <!-- import main macro -->
+    <xacro:include filename="$(find dual_ur5_arm_driver)/urdf/ur5_ft_gripper_macro.urdf.xacro"/>
+
+	  <link name="world"/>
+
+    <link name="plane_collision">
+      <visual>
+        <origin rpy="0.0 0 0" xyz="0 0 -0.02"/>
+        <geometry>
+          <mesh filename="file://$(find dual_description)/meshes/plane_collision.stl" scale="2 2 2"/>
+        </geometry>
+        <material name="blue">
+          <color rgba="0 0 1.0 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 -0.02"/>
+        <geometry>
+          <mesh filename="file://$(find dual_description)/meshes/plane_collision.stl" scale="2 2 2"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="plane_joint" type="fixed">
+      <parent link="world"/>
+      <child link="plane_collision"/>
+      <origin xyz="${world_base_frame['x']} ${world_base_frame['y']} ${world_base_frame['z']}"
+        rpy="${world_base_frame['roll']} ${world_base_frame['pitch']} ${world_base_frame['yaw']}" />
+    </joint>
+
+
+    <link name="dual_base">
+      <visual>
+        <origin rpy="0.0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find dual_description)/meshes/dual_base.stl"/>
+        </geometry>
+        <material name="blue">
+          <color rgba="0 0 1.0 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find dual_description)/meshes/dual_base.stl"/>
+        </geometry>
+      </collision>
+      <!-- 双臂基座台的惯性系数未知
+      <inertial>
+        <mass
+        value="1" />
+    	  <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+      </inertial>
+      -->
+    </link>
+    
+   <joint name="world_dual_base_joint" type="fixed">
+    <parent link="world"/>
+    <child link="dual_base"/>
+    <origin xyz="${world_base_frame['x']} ${world_base_frame['y']} ${world_base_frame['z']}"
+            rpy="${world_base_frame['roll']} ${world_base_frame['pitch']} ${world_base_frame['yaw']}" />
+   </joint>
+
+
+    <!-- left ur_robotiq_rs -->
+    <xacro:ur5_ft_gripper
+        ur_name="left_ur"
+        ur_type="$(arg ur_type)" 
+        tf_prefix="$(arg leftArm_tf_prefix)" 
+        parent="dual_base"
+        sim_gazebo="$(arg sim_gazebo)"
+        initial_positions="$(arg left_initial_positions_file)"
+        kinematics_parameters_file="$(arg left_arm_kinematics_parameters_file)"
+        use_fake_hardware="$(arg use_fake_hardware)"
+      	fake_sensor_commands="$(arg fake_sensor_commands)"
+        >
+        <origin xyz="${left_base_frame['x']} ${left_base_frame['y']} ${left_base_frame['z']}"
+            rpy="${left_base_frame['roll']} ${left_base_frame['pitch']} ${left_base_frame['yaw']}" />
+        
+    </xacro:ur5_ft_gripper>
+
+    <!-- right ur_robotiq_rs -->
+    <xacro:ur5_ft_gripper 
+        ur_name="right_ur"
+        ur_type="$(arg ur_type)" 
+        tf_prefix="$(arg rightArm_tf_prefix)" 
+        parent="dual_base"
+        sim_gazebo="$(arg sim_gazebo)"
+        initial_positions="$(arg right_initial_positions_file)"
+        kinematics_parameters_file="$(arg right_arm_kinematics_parameters_file)"
+        use_fake_hardware="$(arg use_fake_hardware)"
+      	fake_sensor_commands="$(arg fake_sensor_commands)"
+       >
+        <origin xyz="${right_base_frame['x']} ${right_base_frame['y']} ${right_base_frame['z']}"
+            rpy="${right_base_frame['roll']} ${right_base_frame['pitch']} ${right_base_frame['yaw']}" />
+    </xacro:ur5_ft_gripper>
+
+    <xacro:if value="$(arg sim_gazebo)">
+        <gazebo reference="dual_base">
+            <material>Gazebo/Blue</material>
+            <gravity>false</gravity>
+            <selfCollide>false</selfCollide>
+        </gazebo>
+
+        <gazebo reference="plane_collision">
+            <material>Gazebo/Green</material>
+            <gravity>false</gravity>
+            <selfCollide>false</selfCollide>
+        </gazebo>
+
+
+        <gazebo>
+          <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+              <parameters>$(arg simulation_controllers)</parameters>
+          </plugin>
+        </gazebo>
+
+        <gazebo>
+            <!-- grasp fix plugin for gazebo classic -->
+            <plugin name="gazebo_grasp_fix" filename="libgazebo_grasp_fix.so">
+                <arm>
+                    <arm_name>left_robotiq_85_gripper_arm</arm_name>
+                    <palm_link>left_wrist_3_link</palm_link>
+                    <gripper_link>left_robotiq_85_left_finger_tip_link</gripper_link>
+                    <gripper_link>left_robotiq_85_right_finger_tip_link</gripper_link>
+                    <gripper_link>left_robotiq_85_left_knuckle_link</gripper_link>
+                    <gripper_link>left_robotiq_85_right_knuckle_link</gripper_link>
+                    <gripper_link>left_robotiq_85_left_inner_knuckle_link</gripper_link>
+                    <gripper_link>left_robotiq_85_right_inner_knuckle_link</gripper_link>
+                </arm>
+                <arm>
+                    <arm_name>right_robotiq_85_gripper_arm</arm_name>
+                    <palm_link>right_wrist_3_link</palm_link>
+                    <gripper_link>right_robotiq_85_left_finger_tip_link</gripper_link>
+                    <gripper_link>right_robotiq_85_right_finger_tip_link</gripper_link>
+                    <gripper_link>right_robotiq_85_left_knuckle_link</gripper_link>
+                    <gripper_link>right_robotiq_85_right_knuckle_link</gripper_link>
+                    <gripper_link>right_robotiq_85_left_inner_knuckle_link</gripper_link>
+                    <gripper_link>right_robotiq_85_right_inner_knuckle_link</gripper_link>
+                </arm>
+                <forces_angle_tolerance>150</forces_angle_tolerance>
+                <update_rate>30</update_rate>
+                <grip_count_threshold>1</grip_count_threshold>
+                <max_grip_count>2</max_grip_count>
+                <release_tolerance>0.01</release_tolerance>
+                <disable_collisions_on_attach>false</disable_collisions_on_attach>
+                <contact_topic>__default_topic__</contact_topic>
+             </plugin>
+         </gazebo>
+    </xacro:if>
+</robot>
+

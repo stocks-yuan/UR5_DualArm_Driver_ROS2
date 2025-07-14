@@ -1,0 +1,15 @@
+# Default initial positions for dual_ur5_ft_gripper_base's ros2_control fake system
+
+initial_positions:
+  leftArm_elbow_joint: 0
+  leftArm_shoulder_lift_joint: 0
+  leftArm_shoulder_pan_joint: 0
+  leftArm_wrist_1_joint: 0
+  leftArm_wrist_2_joint: 0
+  leftArm_wrist_3_joint: 0
+  rightArm_elbow_joint: 0
+  rightArm_shoulder_lift_joint: 0
+  rightArm_shoulder_pan_joint: 0
+  rightArm_wrist_1_joint: 0
+  rightArm_wrist_2_joint: 0
+  rightArm_wrist_3_joint: 0

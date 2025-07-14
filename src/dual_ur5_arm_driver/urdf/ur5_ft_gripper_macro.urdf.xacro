@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="ur5_ft_gripper" params="
+    ur_name:=ur
+    ur_type:=ur5
+    tf_prefix
+    parent
+    *origin
+    use_fake_hardware:=false
+    fake_sensor_commands:=false
+    sim_gazebo:=false
+    sim_ignition:=false
+    headless_mode:=false
+    initial_positions
+    kinematics_parameters_file
+    "
+    >
+
+    <!-- import main macro -->
+    <!--/opt/ros/humble/share/ur_description/urdf
+        sudo apt-get install ros-humble-ur
+    -->
+    <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+    <xacro:include filename="$(find robotiq_ft_sensor_description)/urdf/robotiq_ft300.urdf.xacro" />
+    <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro" />
+    
+    <!-- property -->
+    <xacro:property name="joint_limits_parameters_file" value="$(find ur_description)/config/${ur_type}/joint_limits.yaml"/>
+    <!-- 修改为传入calibration参数
+    <xacro:property name="kinematics_parameters_file" value="$(find ur_description)/config/${ur_type}/default_kinematics.yaml"/>
+    -->
+    <xacro:property name="physical_parameters_file" value="$(find ur_description)/config/${ur_type}/physical_parameters.yaml"/>
+    <xacro:property name="visual_parameters_file" value="$(find ur_description)/config/${ur_type}/visual_parameters.yaml"/>
+    <xacro:property name="transmission_hw_interface" value=""/>
+    <xacro:property name="safety_limits" value="false"/>
+    <xacro:property name="safety_pos_margin" value="0.15"/>
+    <xacro:property name="safety_k_position" value="20"/>
+    <!-- ros2_control related parameters -->
+    <xacro:property name="headless_mode" value="false" />
+    <xacro:property name="robot_ip" value="0.0.0.0" />
+    <xacro:property name="script_filename" value=""/>
+    <xacro:property name="output_recipe_filename" value=""/>
+    <xacro:property name="input_recipe_filename" value=""/>
+    <xacro:property name="reverse_ip" value="0.0.0.0"/>
+    <xacro:property name="script_command_port" value="50004"/>
+    <xacro:property name="reverse_port" value="50001"/>
+    <xacro:property name="script_sender_port" value="50002"/>
+    <xacro:property name="trajectory_port" value="50003"/>
+    <!--   tool communication related parameters-->
+    <xacro:property name="use_tool_communication" value="false" />
+    <xacro:property name="tool_voltage" value="0" />
+    <xacro:property name="tool_parity" value="0" />
+    <xacro:property name="tool_baud_rate" value="115200" />
+    <xacro:property name="tool_stop_bits" value="1" />
+    <xacro:property name="tool_rx_idle_chars" value="1.5" />
+    <xacro:property name="tool_tx_idle_chars" value="3.5" />
+    <xacro:property name="tool_device_name" value="/tmp/ttyUR" />
+    <xacro:property name="tool_tcp_port" value="54321" />
+
+
+    <!-- arm -->
+    <xacro:ur_robot
+      name="${ur_name}"
+      tf_prefix="${tf_prefix}"
+      parent="${parent}" 
+      joint_limits_parameters_file="${joint_limits_parameters_file}"
+      kinematics_parameters_file="${kinematics_parameters_file}"
+      physical_parameters_file="${physical_parameters_file}"
+      visual_parameters_file="${visual_parameters_file}"
+      transmission_hw_interface="${transmission_hw_interface}"
+      safety_limits="${safety_limits}"
+      safety_pos_margin="${safety_pos_margin}"
+      safety_k_position="${safety_k_position}"
+      use_fake_hardware="${use_fake_hardware}"
+      fake_sensor_commands="${fake_sensor_commands}"
+      sim_gazebo="${sim_gazebo}"
+      sim_ignition="${sim_ignition}"
+      headless_mode="${headless_mode}"
+      initial_positions="${xacro.load_yaml(initial_positions)}"
+      use_tool_communication="${use_tool_communication}"
+      tool_voltage="${tool_voltage}"
+      tool_parity="${tool_parity}"
+      tool_baud_rate="${tool_baud_rate}"
+      tool_stop_bits="${tool_stop_bits}"
+      tool_rx_idle_chars="${tool_rx_idle_chars}"
+      tool_tx_idle_chars="${tool_tx_idle_chars}"
+      tool_device_name="${tool_device_name}"
+      tool_tcp_port="${tool_tcp_port}"
+      robot_ip="${robot_ip}"
+      script_filename="${script_filename}"
+      output_recipe_filename="${output_recipe_filename}"
+      input_recipe_filename="${input_recipe_filename}"
+      reverse_port="${reverse_port}"
+      script_sender_port="${script_sender_port}"
+      reverse_ip="${reverse_ip}"
+      script_command_port="${script_command_port}"
+      trajectory_port="${trajectory_port}"
+      >
+      <xacro:insert_block name="origin" />          <!-- position robot in the parent link -->
+    </xacro:ur_robot>
+
+     <xacro:robotiq_ft300 parent="${tf_prefix}wrist_3_link" prefix="${tf_prefix}" sim_gazebo="${sim_gazebo}">
+      <origin xyz="0 0 -0.004" rpy="0 0 0"/> 
+     </xacro:robotiq_ft300>
+
+    <!-- FORCE REFERENCE FRAME _______________________________________________________________________________
+    As specified in the documentation
+    
+    - The Z axis passes through the center of the depression with positive direction in the tool direction.
+    - The X axis traces a symmetric line centered on the connector; the positive direction
+        points the opposite way away from the connector.
+    - The Y axis uses the right hand thumb rule according to X-Z. -->
+
+    <!-- gripper -->
+
+    <!-- <xacro:robotiq_2f_85_gripper name="${ur_name}gripper" 
+        prefix="${tf_prefix}"
+        
+        parent="${tf_prefix}ft300_sensor" 
+        use_fake_hardware="${use_fake_hardware}"
+        sim_gazebo="$(arg sim_gazebo)">
+        <origin xyz="0 0 0" rpy="${pi} 0 ${pi}" />
+    </xacro:robotiq_2f_85_gripper> -->
+    
+
+    <!-- grasp point for planning -->
+    <!-- <link name="${tf_prefix}grasp_point"/>
+    <joint name="${tf_prefix}grasp_point_joint" type="fixed">
+      <parent link="${tf_prefix}tool0"/>
+      <child link="${tf_prefix}grasp_point"/>
+      <origin xyz="0 0 0.17" rpy="0 0 0"/>
+    </joint> -->
+
+
+    <!-- <xacro:if value="${sim_gazebo}">
+        <gazebo reference="${tf_prefix}robotiq_85_base_joint">
+          <disableFixedJointLumping>true</disableFixedJointLumping>
+          <provideFeedback>true</provideFeedback>
+        </gazebo>
+
+        <gazebo>
+            <plugin name="${tf_prefix}gazebo_ros_ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+              <ros>
+                <namespace>/${tf_prefix}robotiq_ft300</namespace>
+              </ros>
+     
+              <joint_name>${tf_prefix}robotiq_85_base_joint</joint_name>
+              
+              <update_rate>50</update_rate>
+              
+              <gaussian_noise>0.01</gaussian_noise>
+            </plugin>
+        </gazebo>
+    </xacro:if> -->
+  </xacro:macro>
+</robot>

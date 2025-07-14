@@ -1,0 +1,23 @@
+# Position and orientation of the robot base wrt World
+# it will be parsed in dual_ur5_ft_gripper_base.urdf.xacro
+left_base_frame:
+  x: 0.19894
+  y: 0
+  z: 0.545  #0.545+1.02
+  roll: -1.571
+  pitch: -0.785
+  yaw: -2.3568
+right_base_frame:
+  x: -0.19894
+  y: 0
+  z: 0.545 #0.545+1.02
+  roll: -1.5711
+  pitch: -0.7851
+  yaw: 2.3568
+world_base_frame:
+  x: 0
+  y: 0
+  z: 0 #1.02
+  roll: 0
+  pitch: 0
+  yaw: 0

@@ -1,0 +1,9 @@
+# Default initial positions for dual_ur5_ft_gripper_base's ros2_control fake system
+# 一般由moveit_assistant 的Step8 : ros2_control URDF Modification 生成
+# 但是UR官方包中描述文件中已经包含ros2_control和initial_positions参数,所以在生成URDF文件时就用到了该参数
+shoulder_pan_joint: 1.09624
+shoulder_lift_joint: -2.44259
+elbow_joint: 2.22879
+wrist_1_joint: -0.591143
+wrist_2_joint: 1.74742
+wrist_3_joint: 0.523774

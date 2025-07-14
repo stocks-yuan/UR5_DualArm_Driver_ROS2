@@ -1,0 +1,444 @@
+# Launch file for the Robot's GAZEBO SIMULATION + MoveIt!2 Framework in ROS2 Humble:
+
+# Import libraries:
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,TimerAction,RegisterEventHandler
+from launch.conditions import IfCondition, UnlessCondition
+from launch.event_handlers import OnProcessExit, OnProcessStart
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution,PythonExpression
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.descriptions import ParameterValue
+
+def generate_launch_description():
+    # Declare arguments
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'runtime_config_package',
+            default_value='dual_description',
+            description='Package with the controller\'s configuration in "config" folder. \
+                         Usually the argument is not set, it enables use of a custom setup.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'controllers_file',
+            default_value='controllers.yaml',
+            description='YAML file with the controllers configuration.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'description_package',
+            default_value='dual_description',
+            description='Description package with robot URDF/xacro files. Usually the argument \
+                         is not set, it enables use of a custom description.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'description_file',
+            default_value='dual_ur5_ft_gripper_base.urdf.xacro',
+            description='URDF/XACRO description file with the robot.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'gazebo_world_file',
+            default_value='empty.world',
+            description='gazebo world file with the robot',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'prefix',
+            default_value='""',
+            description='Prefix of the joint names, useful for multi-robot setup. \
+                         If changed than also joint names in the controllers \
+                         configuration have to be updated. Expected format "<prefix>/"',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'namespace',
+            default_value='',
+            description='Namespace of launched nodes, useful for multi-robot setup. \
+                         If changed than also the namespace in the controllers \
+                         configuration needs to be updated. Expected format "<ns>/".',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'sim_gazebo',
+            default_value='true',
+            description='Start robot in Gazebo simulation.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'use_fake_hardware',
+            default_value='false',
+            description='Start robot with fake hardware mirroring command to its states.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'use_planning',
+            default_value='true',
+            description='Start robot with Moveit2 `move_group` planning \
+                         config for Pilz and OMPL.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'left_arm_controller',
+            default_value='left_ur_arm_controller',
+            description='arm controller to start.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'left_gripper_controller',
+            default_value='left_gripper_controller',
+            description='gripper controller to start.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'right_arm_controller',
+            default_value='right_ur_arm_controller',
+            description='arm controller to start.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'right_gripper_controller',
+            default_value='right_gripper_controller',
+            description='gripper controller to start.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'start_rviz',
+            default_value='true',
+            description='Start RViz2 automatically with this launch file.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'rviz_config_file', 
+            default_value='dual_MTC.rviz',
+            description='Rviz file'
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'left_initial_positions_file',
+            default_value='left_initial_positions.yaml',
+            description='Configuration file of robot initial positions for simulation.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'right_initial_positions_file',
+            default_value='right_initial_positions.yaml',
+            description='Configuration file of robot initial positions for simulation.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'base_frame_file',
+            default_value='base_frame.yaml',
+            description='Configuration file of robot base frame wrt World.',
+        )
+    )
+
+    # Initialize Arguments
+    runtime_config_package = LaunchConfiguration('runtime_config_package')
+    controllers_file = LaunchConfiguration('controllers_file')
+    description_package = LaunchConfiguration('description_package')
+    description_file = LaunchConfiguration('description_file')
+    gazebo_world_file = LaunchConfiguration('gazebo_world_file')
+    prefix = LaunchConfiguration('prefix')
+    namespace = LaunchConfiguration('namespace')
+    sim_gazebo = LaunchConfiguration('sim_gazebo')
+    use_planning = LaunchConfiguration('use_planning')
+    left_arm_controller = LaunchConfiguration('left_arm_controller')
+    left_gripper_controller = LaunchConfiguration('left_gripper_controller')
+    right_arm_controller = LaunchConfiguration('right_arm_controller')
+    right_gripper_controller = LaunchConfiguration('right_gripper_controller')
+    start_rviz = LaunchConfiguration('start_rviz')
+    rviz_config_file = LaunchConfiguration('rviz_config_file')
+    left_initial_positions_file = LaunchConfiguration('left_initial_positions_file')
+    right_initial_positions_file = LaunchConfiguration('right_initial_positions_file')
+    base_frame_file = LaunchConfiguration('base_frame_file')
+
+    # File path
+    controllers_file_path = PathJoinSubstitution(
+        [FindPackageShare(description_package), 'config', controllers_file,]
+    )
+    
+    left_initial_positions_file_path = PathJoinSubstitution(
+        [FindPackageShare(runtime_config_package), 'config', left_initial_positions_file,]
+    )
+    right_initial_positions_file_path = PathJoinSubstitution(
+        [FindPackageShare(runtime_config_package), 'config', right_initial_positions_file,]
+    )
+    rviz_config_file_path = PathJoinSubstitution(
+        [FindPackageShare(runtime_config_package), 'rviz', rviz_config_file]
+    )
+    gazebo_world_file_path = PathJoinSubstitution(
+        [FindPackageShare(runtime_config_package), 'gazebo', gazebo_world_file]
+    )
+    base_frame_file_path = PathJoinSubstitution(
+        [FindPackageShare(runtime_config_package), 'config', base_frame_file]
+    )
+
+    # ***** GAZEBO ***** #   
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [PathJoinSubstitution(
+                [FindPackageShare('gazebo_ros'),
+                    'launch', 'gazebo.launch.py']
+            )]
+        ),
+        launch_arguments={
+            'verbose': 'false', 
+            'world': gazebo_world_file_path
+            }.items(),
+        condition=IfCondition(sim_gazebo),
+    )
+
+    # ***** ROBOT DESCRIPTION ***** #
+    # Get URDF/XACRO file path
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name='xacro')]),
+            ' ',
+            PathJoinSubstitution(
+                [FindPackageShare(description_package), 'urdf', description_file]
+            ), 
+            ' ',
+            'ur_type:=',
+            'ur5',
+            ' ',
+            'sim_gazebo:=', 
+            sim_gazebo, 
+            ' ', 
+            'simulation_controllers:=',
+            controllers_file_path,
+            ' ',
+            'left_initial_positions_file:=', 
+            left_initial_positions_file_path,
+            ' ', 
+            'right_initial_positions_file:=',
+            right_initial_positions_file_path,
+            ' ', 
+            'base_frame_file:=',
+            base_frame_file_path,
+        ]
+    )
+
+    robot_description = {
+        'robot_description': ParameterValue(robot_description_content, value_type=str)
+        # it is the safe way to wrap the xacro output
+        # ref: https://answers.ros.org/question/417369/caught-exception-in-launch-see-debug-for-traceback-unable-to-parse-the-value-of-parameter-robot_description-as-yaml/
+    }
+    
+    # --------------Nodes and Launch------------------------#
+    # ROBOT STATE PUBLISHER NODE:
+    robot_state_pub_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        namespace=namespace,
+        output='both',
+        parameters=[
+            robot_description,
+            {"use_sim_time": True},
+        ],
+    )
+
+   
+    # SPAWN ROBOT TO GAZEBO:
+    spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        name="spawn_entity_node",
+        arguments=['-topic', [namespace, 'robot_description'], 
+                   '-entity', [namespace, 'dual-ur5-gripper']],
+        output='both',
+        condition=IfCondition(sim_gazebo),
+    )
+
+    # ***** CONTROLLERS ***** #
+    
+    control_node = Node(
+        package='controller_manager',
+        executable='ros2_control_node',
+        parameters=[robot_description, controllers_file_path],
+        output='both',#指定节点输出的类型。'both' 表示节点的输出会同时显示在控制台和日志文件中，便于调试和记录。
+        namespace=namespace,
+        condition=UnlessCondition(sim_gazebo),#真机？
+    )
+    # Joint STATE BROADCASTER:
+    joint_state_broadcaster_spawner = Node(
+        package='controller_manager',               # 指定要启动的节点所属的ROS 2包，这里是'controller_manager'
+        executable='spawner',                       # 指定要运行的可执行文件，这里是'spawner'
+        arguments=['joint_state_broadcaster',       # 传递给可执行文件的参数，指定要生成的控制器名称
+                '--controller-manager',          # 指定控制器管理器
+                [namespace, 'controller_manager']], # 使用列表的形式拼接命名空间和控制器管理器名称
+    )
+    # Joint TRAJECTORY Controller:
+    left_arm_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[left_arm_controller, '--controller-manager', [namespace, 'controller_manager']],
+    )
+
+    left_gripper_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[left_gripper_controller, '--controller-manager', [namespace, 'controller_manager']],
+    )
+
+    right_arm_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[right_arm_controller, '--controller-manager', [namespace, 'controller_manager']],
+    )
+
+    right_gripper_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[right_gripper_controller, '--controller-manager', [namespace, 'controller_manager']],
+    )
+
+
+    # *********************** MoveIt!2 *********************** #   
+
+    # *** PLANNING CONTEXT *** #
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='log',
+        arguments=['-d', rviz_config_file_path],
+        parameters=[
+            robot_description,
+            {"use_sim_time": True},
+        ],
+        condition=UnlessCondition(use_planning), # Do not start RViz2 if planning is used, 
+                                                # because rviz is launched inside planning launch file
+    )
+
+    planning_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            FindPackageShare(description_package),
+            '/launch',
+            '/dual_planning.launch.py'
+        ]),
+        launch_arguments={
+            'runtime_config_package': runtime_config_package,
+            'description_package':description_package,
+            'description_file': description_file,
+            'prefix': prefix,
+            'namespace': namespace,
+            'use_sim': sim_gazebo,
+            'start_rviz': start_rviz,
+            'rviz_config_file': rviz_config_file,
+            'base_frame_file': base_frame_file,
+        }.items(),
+        condition=IfCondition(use_planning),# Only include if planning is used
+    )
+
+    
+    # Delay `joint_state_broadcaster` after spawn_entity if in simulation
+    delay_joint_state_broadcaster_spawner_after_spawn_entity = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_entity,
+            on_exit=[joint_state_broadcaster_spawner],
+        ),
+        condition=IfCondition(sim_gazebo),
+    )
+
+    # Delay `joint_state_broadcaster` after control_node if not in simulation
+    delay_joint_state_broadcaster_spawner_after_control_node = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=control_node,
+            on_start=[joint_state_broadcaster_spawner],
+        ),
+        condition=UnlessCondition(sim_gazebo),
+    )
+
+    # Delay start of robot controllers after `joint_state_broadcaster`
+    delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[left_arm_controller_spawner, left_gripper_controller_spawner, right_arm_controller_spawner, right_gripper_controller_spawner],
+        )
+    )
+
+    # Delay MoveIt! nodes (run_move_group_node and rviz_node_full) after spawn_entity if in simulation
+    delay_moveit_after_spawn_entity_in_simulation = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_entity,
+            on_exit=[
+                TimerAction(
+                    period=2.0,
+                    actions=[planning_launch],  # Delay the entire planning_launch which includes MoveIt and RViz
+                ),
+            ],
+        ),
+        condition=IfCondition(sim_gazebo),  # Only in simulation environment
+    )
+
+    # Delay MoveIt! nodes after control_node if not in simulation
+    delay_moveit_after_control_node_in_real = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=control_node,
+            on_start=[
+                TimerAction(
+                    period=2.0,
+                    actions=[planning_launch],  # Delay the entire planning_launch which includes MoveIt and RViz
+                ),
+            ],
+        ),
+        condition=UnlessCondition(sim_gazebo),  # Only in non-simulation (real) environment
+    )
+
+    # Delay rviz start after `joint_state_broadcaster` only if planning is not used
+    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=Node(
+                package='controller_manager',
+                executable='spawner',
+                arguments=['joint_state_broadcaster'],
+            ),
+            on_exit=[rviz_node],
+        ),
+        condition=IfCondition(
+            PythonExpression([
+                '("', LaunchConfiguration('start_rviz'), '" == "true") and ("',
+                LaunchConfiguration('use_planning'), '" != "true")'
+            ])
+        ),
+    )
+    nodes = [
+        gazebo,
+        robot_state_pub_node,
+
+        spawn_entity,# gazebo仿真环境
+        delay_joint_state_broadcaster_spawner_after_spawn_entity,
+        delay_moveit_after_spawn_entity_in_simulation,
+
+        control_node, #真机环境
+        delay_joint_state_broadcaster_spawner_after_control_node,
+        delay_moveit_after_control_node_in_real,
+        delay_rviz_after_joint_state_broadcaster_spawner,
+        # 发布控制器
+        delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
+    ]
+
+    return LaunchDescription(declared_arguments + nodes)

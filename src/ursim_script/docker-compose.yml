@@ -1,0 +1,29 @@
+version: "3"
+services:
+  leftArm:
+    image: universalrobots/ursim_cb3
+    environment:
+      - ROBOT_MODEL=UR5
+    networks:
+      ursim_net:
+        ipv4_address: 11.5.0.5
+    volumes:
+      - /home/stocks/ros2_learn/ur5_dual_project/src/ursim_script/ursim/urcaps:/urcaps
+      - /home/stocks/ros2_learn/ur5_dual_project/src/ursim_script/ursim/programs_leftArm:/ursim/programs
+  rightArm:
+    image: universalrobots/ursim_cb3
+    environment:
+      - ROBOT_MODEL=UR5
+    networks:
+      ursim_net:
+        ipv4_address: 11.5.0.6
+    volumes:
+      - /home/stocks/ros2_learn/ur5_dual_project/src/ursim_script/ursim/urcaps:/urcaps
+      - /home/stocks/ros2_learn/ur5_dual_project/src/ursim_script/ursim/programs_rightArm:/ursim/programs
+
+networks:
+  ursim_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 11.5.0.0/24
